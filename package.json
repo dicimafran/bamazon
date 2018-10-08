@@ -6,10 +6,19 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dicimafran/bamazon.git"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dicimafran/bamazon/issues"
+  },
+  "homepage": "https://github.com/dicimafran/bamazon#readme",
   "dependencies": {
+    "dotenv": "^6.0.0",
     "inquirer": "^6.2.0",
     "mysql": "^2.16.0"
   }

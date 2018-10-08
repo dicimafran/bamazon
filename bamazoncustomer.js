@@ -1,79 +1,100 @@
-/* Structure: 
-    Dependencies: 
-        mysql: for store's db, bamazon_DB
-        inquirer: for user interface
-
-    Connection
-        create var connection to connect to mySql database
-        create way to connect to mysql server and sql database
-
-    Customer view
-        Functions for the customers:
-            I) Buy function
-                A) query database for all the products --> connection.query("SELECT * FROM products", function(err, res)
-                B) prompt user on what to buy.
-                    1) choices is a function sort of object 
-                        a) make an empty array variable to push query results into
-                        b) return the variable after results have been pushed
-                    2)  
-
-                C) make a promise to retrieve chosen item's info
-
-            II) How many units to buy
-        
-        Function for the store: Check to see if store has enough of product to meet customer request
-            .then
-
-            a) if stock_quantity != 0, console.log ("Out of stock.")
-            b) if stock_quantity > 0
-                update SQL database to reflect remaining quantity
-                show the customer the total cost of purchase
-                
-    Manager view: Upping the challenge
-        */
-
 // Dependencies
 var mysql = require('mysql');
 var inquirer = require('inquirer');
 
+// Formatting
+var line = ('--------------------------------------------');
+var dblLine = ('\n' + '===========================================' + '\n');
+
 // Connection to Port and Database w/ prompt start after successful connection
 var connection = mysql.createConnection({
     host: 'localhost',
-    port:3306,
-    user:'root',
-    password:'root',
+    port: 3306,
+    user: 'root',
+    password: 'root',
     database: 'bamazon_DB'
 });
 
-connection.connect(function(err) {
-    if(err) throw err;
-    promptstart();
-   afterConnection();
+
+console.log(dblLine + '\n\t Hello! And welcome to Bamazon! \n' + dblLine)
+
+connection.connect(function (err) {
+    if (err) throw err;
+
+    else {
+        console.log('\t Here is what we have... \n' + line + '\n')
+        productQuery();
+    };
 });
 
-function prompstart() {
+// Constructor function for product Info 
+
+function ProductInfo(item_id, product_name, department_name, price, stock_quantity) {
+    this.id = item_id;
+    this.Product = product_name;
+    this.Department = department_name;
+    this.Price = price;
+    this.Stock = stock_quantity;
+};
+
+ProductInfo.prototype.printInfo = function () {
+    console.log(
+        '\n' +
+        '  Item id: ' + this.id + '\n' +
+        '  Product name: ' + this.Product + '\n' +
+        '  Department: ' + this.Department + '\n' +
+        '  Price: $' + this.Price + '\n' +
+        '  Stock ' + this.Stock + '\n' +
+        '\n' + line
+    );
+};
+
+function productQuery() {
+    connection.query('SELECT * FROM products', function (err, response) {
+        if (err) throw err;
+
+        else {
+            for (i = 0; i < response.length; i++) {
+                const res = response;
+
+                // Product info based on responses
+                let inventoryInfo = new ProductInfo(
+                    res[i].item_id,
+                    res[i].product_name,
+                    res[i].department_name,
+                    res[i].price,
+                    res[i].stock_quantity
+                );
+                inventoryInfo.printInfo();
+
+                // I want the names in a single array, not separated. 
+                // How do I concatenate them for choices array in buyPrompt?
+                const choiceNames= inventoryInfo.Product
+                const choiceArray = [];
+                choiceArray.push(choiceNames)
+                console.log(choiceArray)
+                
+            };
+        };
+        connection.end();
+    });
+};
+
+
+function buyPrompt(choices) {
     inquirer
-        .prompt([ 
+        .prompt([
             {
-            type:'rawlist',
-            name:'start',
-            message:'What would you like to buy?'
-            choices:
+                name: 'choice',
+                message: '\n What would you like to buy?',
+                type: 'list',
+                choices: [choices]
             }
-        ])
-        .then(function(What))
+        ]).then(function (answer) {
+            console.log(answer.choice)
+        });
 }
 
 
 
 
-function buy() {
-    connection.query("SELECT * FROM products", function(err, res) {
-      if (err) throw err;
-      inquirer
-        .prompt([
-            name
-        ])
-    });
-  }
-  
