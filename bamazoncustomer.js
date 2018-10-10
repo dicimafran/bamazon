@@ -3,7 +3,7 @@ var mysql = require('mysql');
 var inquirer = require('inquirer');
 
 // Formatting
-var line = ('--------------------------------------------');
+var line = ('--------------------------------------------------------------------------------------------------')
 var dblLine = ('\n' + '===========================================' + '\n');
 
 // Connection to Port and Database w/ prompt start after successful connection
@@ -16,85 +16,85 @@ var connection = mysql.createConnection({
 });
 
 
-console.log(dblLine + '\n\t Hello! And welcome to Bamazon! \n' + dblLine)
-
-connection.connect(function (err) {
-    if (err) throw err;
-
-    else {
-        console.log('\t Here is what we have... \n' + line + '\n')
-        productQuery();
-    };
-});
-
-// Constructor function for product Info 
-
-function ProductInfo(item_id, product_name, department_name, price, stock_quantity) {
-    this.id = item_id;
-    this.Product = product_name;
-    this.Department = department_name;
-    this.Price = price;
-    this.Stock = stock_quantity;
-};
-
-ProductInfo.prototype.printInfo = function () {
-    console.log(
-        '\n' +
-        '  Item id: ' + this.id + '\n' +
-        '  Product name: ' + this.Product + '\n' +
-        '  Department: ' + this.Department + '\n' +
-        '  Price: $' + this.Price + '\n' +
-        '  Stock ' + this.Stock + '\n' +
-        '\n' + line
-    );
-};
-
-function productQuery() {
-    connection.query('SELECT * FROM products', function (err, response) {
+function start() {
+    // Displays product info from Product table
+    connection.query('SELECT * FROM Products', function (err, res) {
         if (err) throw err;
 
-        else {
-            for (i = 0; i < response.length; i++) {
-                const res = response;
+        console.log(dblLine + '\n\t Hello! And welcome to Bamazon! \n' + dblLine)
+        console.log(' Here is what we have... \n' + line + '\n')
 
-                // Product info based on responses
-                let inventoryInfo = new ProductInfo(
-                    res[i].item_id,
-                    res[i].product_name,
-                    res[i].department_name,
-                    res[i].price,
-                    res[i].stock_quantity
-                );
-                inventoryInfo.printInfo();
+        for (var i = 0; i < res.length; i++) {
+            console.log("ID: " + res[i].item_id + " | " + "Product: " + res[i].product_name + " | " + "Department: " + res[i].department_name + " | " + "Price: " + res[i].Price + " | " + "QUANTITY: " + res[i].stock_quantity);
+            console.log(line)
+        }
 
-                // I want the names in a single array, not separated. 
-                // How do I concatenate them for choices array in buyPrompt?
-                const choiceNames= inventoryInfo.Product
-                const choiceArray = [];
-                choiceArray.push(choiceNames)
-                console.log(choiceArray)
-                
-            };
-        };
-        connection.end();
-    });
-};
-
-
-function buyPrompt(choices) {
-    inquirer
-        .prompt([
+        console.log(' ');
+        inquirer.prompt([
             {
-                name: 'choice',
-                message: '\n What would you like to buy?',
-                type: 'list',
-                choices: [choices]
+                type: "input",
+                name: "id",
+                message: "Please enter the ID of the product you would like to purchase. \n",
+                validate: function (value) {
+                    if (isNaN(value) == false && parseInt(value) <= res.length && parseInt(value) > 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "input",
+                name: "quantity",
+                message: "How many would you like to purchase?",
+                validate: function (value) {
+                    if (isNaN(value)) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
             }
-        ]).then(function (answer) {
-            console.log(answer.choice)
-        });
+        ]).then(function (ans) {
+            // Input id is converted to index number and input quantity is parsed for calculations
+            var shoppingCart = (ans.id) - 1;
+            var itemQuantity = parseInt(ans.quantity);
+            var grandTotal = parseFloat( (res[shoppingCart].price * itemQuantity) );
+
+            // Compares shopping cart quantity with product quantity in database
+            if (res[shoppingCart].stock_quantity >= itemQuantity) {
+                // Updates quantity in database after purchase. {db table ref: changes based onn input}
+                connection.query("UPDATE Products SET ? WHERE ?", [
+                    { stock_quantity: (res[shoppingCart].stock_quantity - itemQuantity) },
+                    { item_id: ans.id }
+                ], function (err, result) {
+                    if (err) throw err;
+                    console.log("Success! Your total is $" + grandTotal.toFixed(2) + ". Your item(s) will be shipped to you in 3-5 business days.");
+                });
+
+            } else {
+                console.log("Sorry, we're out of stock!");
+            }
+
+            reprompt();
+        })
+    })
 }
 
+// Prompt to add on other items to shopping cart
+function reprompt() {
+    inquirer.prompt([{
+        type: "confirm",
+        name: "reply",
+        message: "Would you like to purchase another item?"
+    }]).then(function (ans) {
+        if (ans.reply) {
+            start();
+        } else {
+            console.log("Farewell!");
+        }
+    });
+}
 
-
+start();
 
